@@ -15,7 +15,8 @@ import { BarCodeScanner } from "expo-barcode-scanner";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import QRCode from "react-native-qrcode-svg";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import RNQRGenerator from "rn-qr-generator";
 
 export default function App() {
   const [hasPermission, setHasPermission] = useState(null);
@@ -86,6 +87,26 @@ export default function App() {
       .catch((error) => console.log(error));
   };
 
+  const readQRFromGallery = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+      base64: true,
+    });
+
+    const str = result.assets[0].base64;
+    RNQRGenerator.detect({
+      base64: str,
+    })
+      .then((response) => {
+        const { values } = response; // Array of detected QR code values. Empty if nothing found.
+        console.log(values);
+      })
+      .catch((error) => console.log("Cannot detect QR code in image", error));
+  };
+
   // Open the device's library to select an image for scanning
   const openLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -146,29 +167,14 @@ export default function App() {
   // Handle the scanned image
   const decodeQRCodeFromImage = async (imageUri) => {
     try {
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      console.log(imageUri);
-      const reader = new FileReader();
-      reader.onload = () => {
-        const imageBase64 = reader.result.split(",")[1];
-        decodeQRCode(imageBase64);
-      };
-      reader.readAsDataURL(blob);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+      const { status } =
+        await RNImagePicker.requestMediaLibraryPermissionsAsync();
 
-  const decodeQRCode = (imageBase64) => {
-    QRCode.toDataURL(imageBase64, (error, response) => {
-      if (error) {
-        console.error(error);
-      } else {
-        const qrCodeData = response.split(",")[1];
-        handleBarCodeScanned({ data: qrCodeData });
-      }
-    });
+      const results = await BarCodeScanner.scanFromURLAsync(imageUri);
+      console.log(results[0]); // many information
+    } catch (error) {
+      console.debug(error);
+    }
   };
 
   const generateQRCode = (data) => {
@@ -241,7 +247,7 @@ export default function App() {
         <Button
           style={styles.but}
           title={"Open Library"}
-          onPress={() => openLibrary()}
+          onPress={() => readQRFromGallery()}
         />
 
         <Button
