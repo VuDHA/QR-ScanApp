@@ -15,7 +15,6 @@ import { BarCodeScanner } from "expo-barcode-scanner";
 import * as ImagePicker from "expo-image-picker";
 import * as MediaLibrary from "expo-media-library";
 import QRCode from "react-native-qrcode-svg";
-import * as FileSystem from "expo-file-system";
 import RNQRGenerator from "rn-qr-generator";
 
 export default function App() {
